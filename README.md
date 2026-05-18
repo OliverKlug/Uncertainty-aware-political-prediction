@@ -139,4 +139,16 @@ pytest tests/ -v
 
 ---
 
+## Social preview & link sharing
+
+A GitHub Pages landing page with full Open Graph / Twitter Card metadata lives at `docs/index.html`.
+The `docs/social-preview.svg` file (1200 × 630 px) is the `og:image` served by that page.
+
+**One-time GitHub setup (enables LinkedIn / Slack / Twitter rich cards):**
+
+1. **Enable GitHub Pages:** Repository → Settings → Pages → Source: `Deploy from a branch`, Branch: `main`, Folder: `/docs`. The landing page will appear at `https://oliverklug.github.io/Uncertainty-aware-political-prediction/`.
+2. **Set repository Social Preview:** Repository → Settings → Social preview → Upload `docs/social-preview.svg` (or a PNG export of it). This makes the GitHub repo URL itself show a rich card.
+
+---
+
 *Not financial advice. Research system only.*
