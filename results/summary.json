@@ -1,0 +1,8 @@
+{
+  "metadata": {
+    "description": "OOS evaluation summary — populated by calibration_report.py and run_backtest.py",
+    "generated_at": null,
+    "n_categories_evaluated": 0
+  },
+  "categories": {}
+}
