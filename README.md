@@ -1,235 +1,142 @@
-# Political & Macroeconomic Event Forecasting Pipeline
+# Political Event Forecasting System
 
-A research system for evaluating predictive signals in political and macroeconomic event-based data.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Data](#data)
-- [Methodology](#methodology)
-- [Results](#results)
-- [Reproducibility](#reproducibility)
-- [Limitations & Disclaimers](#limitations--disclaimers)
+A probabilistic forecasting pipeline for discrete political and macroeconomic events. Produces calibrated probability estimates, evaluates them against market-implied baselines, and logs every prediction with a signed, append-only audit trail.
 
 ---
 
-## Overview
+## What it does
 
-This pipeline generates calibrated probabilistic forecasts for discrete political and macroeconomic events — judicial rulings, legislative outcomes, elections, and geopolitical shifts. Predictions are anchored to historical base rates before incorporating live signals, and every output is logged with a cryptographically signed, append-only audit trail that maps each forecast to its source data, model version, and calibration timestamp.
+Political prediction markets have a systematic miscalibration problem: raw probability estimates cluster away from the tails, and models trained across heterogeneous event types produce overconfident, noisy outputs.
 
-The system runs on a daily schedule: ingest → classify → score → generate candidate signals → log.
+This system addresses that by:
+
+1. Anchoring every forecast to a historical base rate, segmented by event category, before incorporating live signals
+2. Running separate models for each of 8 event types rather than collapsing them
+3. Applying isotonic regression calibration with temporal validation splits to correct for systematic overconfidence
+4. Evaluating all predictions against market-implied probabilities as a passive benchmark, out-of-sample
+
+The pipeline runs daily and is designed to be auditable: every prediction maps to its source data, model version, and calibration timestamp.
 
 ---
 
-## Architecture
+## Pipeline
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                        Daily Pipeline                        │
-│                                                             │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌───────┐ │
-│  │  Ingest  │───▶│ Classify │───▶│  Score   │───▶│  Log  │ │
-│  └──────────┘    └──────────┘    └──────────┘    └───────┘ │
-│        │               │               │                    │
-│        ▼               ▼               ▼                    │
-│   Raw event       Event-type      Calibrated             Signed
-│   data feeds      routing         probabilities          audit trail
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                     Model Layer (per category)               │
-│                                                             │
-│   Base Rate Library ──▶ Category Classifier ──▶ Calibrator  │
-│         │                      │                    │       │
-│   Historical         8 separate models        Isotonic      │
-│   reference          (one per event type)     regression +  │
-│   library                                     bootstrap CI  │
-└─────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────┐
-│                     Evaluation Layer                         │
-│                                                             │
-│   Shadow Portfolio ──▶ Backtesting Engine ──▶ Reporting     │
-│   (hypothetical         (temporal splits,      (Brier,      │
-│    positions)            OOS validation)        ECE, ROC)   │
-└─────────────────────────────────────────────────────────────┘
+Ingest → Classify → Score → Calibrate → Log
+   │          │         │          │        │
+Raw event  Route to  Category   Isotonic  Signed
+feeds      one of 8  classifier  regression append-only
+           models    output      + CI      audit trail
 ```
 
-**Event categories (8 total):**
+**Event categories:**
 
-| # | Category | Examples |
-|---|----------|---------|
-| 1 | Supreme Court rulings | Certiorari grants, merits decisions |
-| 2 | Federal legislation | Senate/House floor votes, cloture |
-| 3 | Executive action | EOs, agency rule publication |
-| 4 | Elections | Primary and general, special elections |
-| 5 | Geopolitical shifts | Treaty ratification, sanctions |
-| 6 | Central bank decisions | Rate decisions, forward guidance |
-| 7 | Macroeconomic releases | CPI prints, NFP vs. consensus |
-| 8 | Regulatory rulings | NLRB, FTC, SEC enforcement |
-
----
-
-## Data
-
-### Sources
-
-| Layer | Type | Timeframe | Notes |
-|-------|------|-----------|-------|
-| Base rate library | Historical outcomes, manually curated | 1990–present | Segmented by event category; primary input for prior construction |
-| Live signals | Public filings, legislative calendars, docket updates | Rolling 90-day window | Sourced from government portals and structured news feeds |
-| Prediction markets | Market-implied probabilities | Rolling | Used as benchmark only; not used in model training |
-
-### Universe
-
-- US federal political events (primary scope)
-- G7 macroeconomic releases
-- Select geopolitical events with binary or ordinal outcome structure
-
-### Limitations
-
-- Base rate library is thinner for low-frequency event types (e.g., constitutional amendments, impeachments). Categories with insufficient calibration data are automatically excluded from the signal layer.
-- Market benchmark comparisons are limited to events with liquid, verifiable market prices at prediction time.
-- No intraday signals. Pipeline runs once per day.
+| Category | Examples |
+|----------|---------|
+| Supreme Court rulings | Merits decisions, cert grants |
+| Federal legislation | Senate/House votes, cloture |
+| Executive action | Executive orders, agency rules |
+| Elections | Primary, general, special |
+| Geopolitical | Treaty ratification, sanctions |
+| Central bank | Rate decisions, forward guidance |
+| Macro releases | CPI, NFP vs. consensus |
+| Regulatory | FTC, SEC, NLRB enforcement outcomes |
 
 ---
 
-## Methodology
+## What makes it different from a standard classifier
 
-### 1. Base Rate Anchoring
+**Separate models per category.** A Supreme Court ruling and a Senate cloture vote have structurally different outcome distributions. Collapsing them produces overconfident, poorly calibrated outputs.
 
-Every forecast starts with a historical base rate pulled from the reference library, segmented by event category. This prior is constructed before any live signals are introduced. Collapsing categories into a single model was rejected early — a Supreme Court ruling and a Senate cloture vote have structurally different outcome distributions.
+**Base rate anchoring.** Live signals update a prior built from historical outcomes. The prior is computed before any live features are introduced, which prevents signal contamination of the baseline.
 
-### 2. Signal Generation
+**Calibration with temporal integrity.** Isotonic regression is fitted on a held-out calibration split. Validation splits respect chronological order -- no look-ahead. Bootstrap confidence intervals (1,000 resamples) quantify calibration uncertainty. Categories with insufficient data are automatically excluded from the signal layer.
 
-Live signals update the prior using a category-specific classifier. Features vary by category (e.g., sponsor count and committee markup status for legislation; oral argument sentiment and precedent alignment for SCOTUS). Feature sets are documented per model in `/docs/model_cards/`.
-
-### 3. Calibration
-
-Raw classifier outputs are systematically overconfident. Calibration uses:
-
-- **Isotonic regression** fitted on a held-out calibration split
-- **Temporal validation splits** (no look-ahead leakage; splits respect chronological order)
-- **Bootstrap confidence intervals** (1,000 resamples) on calibration curve estimates
-- **Multiple-comparison corrections** (Benjamini-Hochberg) when evaluating across categories simultaneously
-
-Categories without sufficient calibration data are flagged and excluded from downstream signal generation automatically.
-
-### 4. Evaluation
-
-Primary metrics:
-
-- **Brier Score** — overall probabilistic accuracy
-- **Expected Calibration Error (ECE)** — miscalibration magnitude
-- **ROC-AUC** — discrimination ability
-- **Log-loss** — penalty for confident wrong predictions
-
-Backtesting uses expanding-window out-of-sample evaluation. No in-sample performance is reported.
-
-### 5. Shadow Portfolio & Audit Trail
-
-Candidate signals are tracked in a shadow portfolio of hypothetical positions. The audit log is append-only and cryptographically signed (SHA-256 per entry). Every prediction record contains:
-
-- Event identifier and category
-- Forecast probability and CI bounds
-- Model version hash
-- Calibration timestamp
-- Source data snapshot reference
-
-Nothing is editable post-write.
+**Signed audit trail.** Every prediction is SHA-256 signed at write time. Append-only. Nothing is editable after logging. This is what makes retrospective evaluation trustworthy.
 
 ---
 
 ## Results
 
-Evaluated on out-of-sample events with verifiable market benchmarks available at prediction time.
+Evaluated on out-of-sample events where market-implied probabilities were available and liquid at prediction time.
 
-| Metric | Value | Notes |
-|--------|-------|-------|
-| Events evaluated (OOS) | — | See `/results/summary.json` |
-| Brier Score vs. market-implied baseline | Lower in 6 of 8 categories | Excluding two thin-data categories |
-| Outperforms market-implied probability | ~53% of evaluated events | Consistent across categories, not concentrated in easy cases |
-| Expected value vs. market odds | Positive | Shadow portfolio; no real capital deployed |
+| Metric | Result |
+|--------|--------|
+| Events evaluated (OOS) | See `results/summary.json` |
+| Outperforms market-implied baseline | ~53% of evaluated events |
+| Category coverage | Consistent across 6 of 8 categories |
+| Expected value vs. market odds | Positive in shadow evaluation |
+| Brier Score vs. baseline | Lower in 6 of 8 categories |
 
-> **Note:** These results are from controlled backtesting with out-of-sample evaluation against market-implied probabilities as a passive benchmark. Past performance in a research setting does not imply future predictive accuracy. No real positions have been taken.
+> **Important:** All results are from shadow evaluation against market benchmarks. No real capital has been deployed. 53% is the directional win rate; full calibration curves and per-category breakdowns are in `/results/`.
 
-Full result tables, calibration curves, and per-category breakdowns are in `/results/`.
+---
+
+## Limitations
+
+- **Thin data categories.** Low-frequency event types (constitutional amendments, impeachments) have insufficient historical data for reliable calibration. These are excluded automatically.
+- **US-centric base rate library.** International events are underrepresented in the reference data.
+- **Benchmark quality varies.** Prediction market liquidity differs significantly across event types. Sparse markets produce noisier benchmarks.
+- **No intraday signals.** Pipeline runs once per day. Doesn't capture last-minute information shocks.
+- **Regime sensitivity.** Calibration is fitted on historical distributions. Structural breaks (e.g. court composition changes, new legislative coalitions) can degrade performance in ways that aren't immediately detectable.
 
 ---
 
 ## Reproducibility
 
-### Requirements
-
-```
-python >= 3.10
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Environment Setup
+**Requirements:** Python >= 3.10
 
 ```bash
 git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
 cd YOUR_REPO
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env           # fill in any required API keys
+cp .env.example .env
 ```
 
-### Run the Pipeline
-
+**Run the full daily pipeline:**
 ```bash
-# Full daily pipeline
 python src/pipeline/run_daily.py
+```
 
-# Backtesting only
+**Run backtesting only:**
+```bash
 python src/backtesting/run_backtest.py --category all --window expanding
+```
 
-# Calibration diagnostics
+**Generate calibration diagnostics:**
+```bash
 python src/evaluation/calibration_report.py --output results/
 ```
 
-### Project Structure
-
-```
-.
-├── src/
-│   ├── data/               # Ingestion, parsing, base rate library
-│   ├── models/             # Category-specific classifiers + calibration
-│   ├── evaluation/         # Brier, ECE, ROC, calibration curves
-│   ├── backtesting/        # Expanding-window OOS backtesting engine
-│   └── pipeline/           # Daily orchestration
-├── docs/
-│   ├── model_cards/        # Per-category feature sets and decisions
-│   └── methodology.md      # Extended methodology notes
-├── results/                # OOS evaluation outputs (read-only artifacts)
-├── tests/                  # Unit and integration tests
-├── .env.example
-├── requirements.txt
-└── README.md
-```
-
-### Running Tests
-
+**Run tests:**
 ```bash
 pytest tests/ -v
 ```
 
 ---
 
-## Limitations & Disclaimers
+## Structure
 
-- **Research only.** This system has not been used to trade real capital. The shadow portfolio is a research instrument.
-- **No investment advice.** Nothing here constitutes financial, legal, or investment advice.
-- **Base rate gaps.** Low-frequency event categories have thin historical data and are excluded from signal generation by design.
-- **Benchmark quality.** Prediction market prices are used as a benchmark. Their quality varies by event and market liquidity.
-- **US-centric.** The base rate library is primarily built on US federal events. International event categories are less mature.
+```
+.
+├── src/
+│   ├── data/           # Ingestion, parsing, base rate library
+│   ├── models/         # Per-category classifiers + calibration
+│   ├── evaluation/     # Brier, ECE, ROC, calibration curves
+│   ├── backtesting/    # Expanding-window OOS engine
+│   └── pipeline/       # Daily orchestration
+├── docs/
+│   ├── model_cards/    # Feature sets and design decisions per category
+│   └── methodology.md  # Extended methodology
+├── results/            # OOS evaluation outputs
+├── tests/
+├── .env.example
+├── requirements.txt
+└── README.md
+```
+
+---
+
+*Not financial advice. Research system only.*
