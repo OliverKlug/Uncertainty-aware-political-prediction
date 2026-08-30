@@ -29,6 +29,15 @@ def test_classifier_predict_proba_shape():
     assert np.all((probs >= 0) & (probs <= 1))
 
 
+def test_classifier_rejects_nan():
+    cat = "election"
+    clf = CategoryClassifier(cat)
+    X, y = _make_data(cat)
+    X[0, 0] = np.nan
+    with pytest.raises(ValueError, match="finite"):
+        clf.fit(X, y)
+
+
 def test_build_classifier_registry_has_all_categories():
     registry = build_classifier_registry()
     assert set(registry.keys()) == set(CATEGORY_FEATURES.keys())

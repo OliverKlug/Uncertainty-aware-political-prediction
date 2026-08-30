@@ -53,13 +53,22 @@ class IsotonicCalibrator:
         """
         from sklearn.isotonic import IsotonicRegression
 
+        raw = np.asarray(raw_probs, dtype=np.float64)
+        y = np.asarray(outcomes, dtype=np.float64)
+        if raw.ndim != 1 or y.ndim != 1 or raw.shape != y.shape:
+            raise ValueError("raw_probs and outcomes must be 1-d and the same length")
+        if raw.size == 0:
+            raise ValueError("raw_probs must be non-empty")
+        if not np.isfinite(raw).all() or not np.isfinite(y).all():
+            raise ValueError("raw_probs and outcomes must be finite")
+
         self._ir = IsotonicRegression(out_of_bounds="clip")
-        self._ir.fit(raw_probs, outcomes)
+        self._ir.fit(raw, y)
         self._is_fitted = True
         logger.info(
             "Fitted isotonic calibrator for category=%s on %d samples.",
             self.category,
-            len(outcomes),
+            len(y),
         )
         return self
 
@@ -153,10 +162,22 @@ def apply_benjamini_hochberg(p_values: np.ndarray, fdr: float = 0.05) -> np.ndar
     np.ndarray of bool
         True where the null hypothesis is rejected.
     """
-    n = len(p_values)
-    order = np.argsort(p_values)
-    ranked = np.empty(n, dtype=float)
-    ranked[order] = np.arange(1, n + 1)
-    threshold = (ranked / n) * fdr
-    rejected = p_values <= threshold
+    p = np.asarray(p_values, dtype=np.float64)
+    if p.ndim != 1 or p.size == 0:
+        raise ValueError("p_values must be a non-empty 1-d array")
+    if not np.isfinite(p).all() or np.any(p < 0.0) or np.any(p > 1.0):
+        raise ValueError("p_values must be finite and in [0, 1]")
+    if not (0.0 < fdr < 1.0):
+        raise ValueError("fdr must be in (0, 1)")
+    n = len(p)
+    order = np.argsort(p, kind="mergesort")
+    sorted_p = p[order]
+    # Step-up: largest k with p_(k) <= (k/n)*fdr, then reject 1..k.
+    k_max = 0
+    for k in range(1, n + 1):
+        if sorted_p[k - 1] <= (k / n) * fdr:
+            k_max = k
+    rejected = np.zeros(n, dtype=bool)
+    if k_max:
+        rejected[order[:k_max]] = True
     return rejected

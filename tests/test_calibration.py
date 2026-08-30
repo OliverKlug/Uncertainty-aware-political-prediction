@@ -46,3 +46,10 @@ def test_benjamini_hochberg_none_significant():
     p_values = np.array([0.9, 0.8, 0.7, 0.6])
     rejected = apply_benjamini_hochberg(p_values, fdr=0.05)
     assert not rejected.any()
+
+
+def test_benjamini_hochberg_step_up_keeps_smaller_p():
+    """Independent per-rank compare rejects 0.04 and keeps 0.03. BH must take both."""
+    p_values = np.array([0.03, 0.04])
+    rejected = apply_benjamini_hochberg(p_values, fdr=0.05)
+    assert rejected.all()

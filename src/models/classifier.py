@@ -99,13 +99,24 @@ class CategoryClassifier:
         from sklearn.preprocessing import StandardScaler
         from sklearn.pipeline import Pipeline
 
+        X_arr = np.asarray(X, dtype=np.float64)
+        y_arr = np.asarray(y, dtype=np.float64)
+        if X_arr.ndim != 2 or y_arr.ndim != 1 or X_arr.shape[0] != y_arr.shape[0]:
+            raise ValueError("X must be 2-d and y 1-d with the same row count")
+        if X_arr.shape[0] < 2:
+            raise ValueError("need at least 2 samples")
+        if not np.isfinite(X_arr).all() or not np.isfinite(y_arr).all():
+            raise ValueError("X and y must be finite")
+        if len(np.unique(y_arr)) < 2:
+            raise ValueError("y must contain both classes")
+
         pipe = Pipeline(
             [
                 ("scaler", StandardScaler()),
                 ("lr", LogisticRegression(max_iter=500, C=1.0)),
             ]
         )
-        pipe.fit(X, y)
+        pipe.fit(X_arr, y_arr)
         self._model = pipe
         self._is_fitted = True
         logger.info("Fitted classifier for category=%s on %d samples.", self.category, len(y))
@@ -120,7 +131,17 @@ class CategoryClassifier:
         """
         if not self._is_fitted:
             raise RuntimeError("Classifier is not fitted. Call fit() first.")
-        return self._model.predict_proba(X)[:, 1]
+        X_arr = np.asarray(X, dtype=np.float64)
+        if X_arr.ndim != 2:
+            raise ValueError("X must be 2-d")
+        if self.feature_names and X_arr.shape[1] != len(self.feature_names):
+            raise ValueError(
+                f"X has {X_arr.shape[1]} features; {self.category} expects "
+                f"{len(self.feature_names)}"
+            )
+        if not np.isfinite(X_arr).all():
+            raise ValueError("X must be finite")
+        return self._model.predict_proba(X_arr)[:, 1]
 
     def save(self, path: str) -> None:
         """Persist the fitted model to *path* using joblib."""

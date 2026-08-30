@@ -37,16 +37,23 @@ def test_roc_auc_random():
     assert 0.0 <= auc <= 1.0
 
 
-def test_roc_auc_single_class_returns_half():
+def test_roc_auc_single_class_is_nan():
     probs = np.array([0.5, 0.6, 0.7])
     outcomes = np.array([1.0, 1.0, 1.0])
-    assert roc_auc(probs, outcomes) == pytest.approx(0.5)
+    assert np.isnan(roc_auc(probs, outcomes))
 
 
 def test_log_loss_perfect():
     probs = np.array([1.0 - 1e-9, 1e-9])
     outcomes = np.array([1.0, 0.0])
     assert log_loss(probs, outcomes) < 1e-6
+
+
+def test_ece_includes_probability_one():
+    """p=1 used to fall out of the last half-open bin and vanish from ECE."""
+    probs = np.array([1.0])
+    outcomes = np.array([0.0])
+    assert expected_calibration_error(probs, outcomes, n_bins=10) == pytest.approx(1.0)
 
 
 def test_evaluate_returns_correct_n_events():

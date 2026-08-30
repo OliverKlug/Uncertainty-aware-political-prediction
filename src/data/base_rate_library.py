@@ -1,8 +1,8 @@
 """Base rate library.
 
-Constructs historical base rates per event category from the curated reference
-dataset (1990–present).  These rates are used to anchor every forecast before
-live signals are applied.
+Loads per-category base rates from a JSON file if one exists.
+No curated 1990–present library ships with this repo. Missing or thin
+categories use an uninformative prior of 0.5.
 """
 
 from __future__ import annotations

@@ -1,38 +1,31 @@
-# Political Event Forecasting System
+# Uncertainty-aware political prediction
 
-A probabilistic forecasting pipeline for discrete political and macroeconomic events. Produces calibrated probability estimates, evaluates them against market-implied baselines, and logs every prediction with a signed, append-only audit trail.
+Research scaffold for discrete political and macro event probabilities: one logistic model per category, isotonic calibration on a later time split, expanding-window backtest.
 
----
+This is not a live forecasting service. Ingest does not call Congress.gov, CourtListener, FRED, or any news API. There is no event store, no fitted production models, and no market-implied evaluation. `results/summary.json` is empty on purpose.
 
-## What it does
+## What actually runs
 
-Political prediction markets have a systematic miscalibration problem: raw probability estimates cluster away from the tails, and models trained across heterogeneous event types produce overconfident, noisy outputs.
+- **Parsers** for two toy JSON shapes: `congress_calendar`, `scotus_docket`
+- **Base-rate lookup** from a JSON file if you provide one; missing or thin categories fall back to 0.5
+- **CategoryClassifier**: L2 logistic regression + standardisation
+- **IsotonicCalibrator** with bootstrap intervals on the calibration curve
+- **Metrics**: Brier, ECE (last bin includes p = 1), ROC-AUC, log-loss
+- **BacktestEngine**: expanding window, chronological fit / calibrate / test, no shuffle
+- **Daily CLI**: writes empty staging JSON, scores the historical prior only, appends a SHA-256 *checksum* (not a cryptographic signature) to `results/audit_log.jsonl`
 
-This system addresses that by:
-
-1. Anchoring every forecast to a historical base rate, segmented by event category, before incorporating live signals
-2. Running separate models for each of 8 event types rather than collapsing them
-3. Applying isotonic regression calibration with temporal validation splits to correct for systematic overconfidence
-4. Evaluating all predictions against market-implied probabilities as a passive benchmark, out-of-sample
-
-The pipeline runs daily and is designed to be auditable: every prediction maps to its source data, model version, and calibration timestamp.
-
----
-
-## Pipeline
+## Pipeline (implemented vs not)
 
 ```
-Ingest → Classify → Score → Calibrate → Log
-   │          │         │          │        │
-Raw event  Route to  Category   Isotonic  Signed
-feeds      one of 8  classifier  regression append-only
-           models    output      + CI      audit trail
+Ingest          Classify              Score                 Log
+empty stubs     2 parsers             prior only            JSONL + checksum
+no HTTP         6 sources unimplemented   no fitted models
 ```
 
-**Event categories:**
+**Event category schemas** (feature lists only; no trained weights):
 
 | Category | Examples |
-|----------|---------|
+|----------|----------|
 | Supreme Court rulings | Merits decisions, cert grants |
 | Federal legislation | Senate/House votes, cloture |
 | Executive action | Executive orders, agency rules |
@@ -42,98 +35,37 @@ feeds      one of 8  classifier  regression append-only
 | Macro releases | CPI, NFP vs. consensus |
 | Regulatory | FTC, SEC, NLRB enforcement outcomes |
 
----
+## Setup
 
-## What makes it different from a standard classifier
-
-**Separate models per category.** A Supreme Court ruling and a Senate cloture vote have structurally different outcome distributions. Collapsing them produces overconfident, poorly calibrated outputs.
-
-**Base rate anchoring.** Live signals update a prior built from historical outcomes. The prior is computed before any live features are introduced, which prevents signal contamination of the baseline.
-
-**Calibration with temporal integrity.** Isotonic regression is fitted on a held-out calibration split. Validation splits respect chronological order -- no look-ahead. Bootstrap confidence intervals (1,000 resamples) quantify calibration uncertainty. Categories with insufficient data are automatically excluded from the signal layer.
-
-**Signed audit trail.** Every prediction is SHA-256 signed at write time. Append-only. Nothing is editable after logging. This is what makes retrospective evaluation trustworthy.
-
----
-
-## Results
-
-Evaluated on out-of-sample events where market-implied probabilities were available and liquid at prediction time.
-
-| Metric | Result |
-|--------|--------|
-| Events evaluated (OOS) | See `results/summary.json` |
-| Outperforms market-implied baseline | ~53% of evaluated events |
-| Category coverage | Consistent across 6 of 8 categories |
-| Expected value vs. market odds | Positive in shadow evaluation |
-| Brier Score vs. baseline | Lower in 6 of 8 categories |
-
-> **Important:** All results are from shadow evaluation against market benchmarks. No real capital has been deployed. 53% is the directional win rate; full calibration curves and per-category breakdowns are in `/results/`.
-
----
-
-## Limitations
-
-- **Thin data categories.** Low-frequency event types (constitutional amendments, impeachments) have insufficient historical data for reliable calibration. These are excluded automatically.
-- **US-centric base rate library.** International events are underrepresented in the reference data.
-- **Benchmark quality varies.** Prediction market liquidity differs significantly across event types. Sparse markets produce noisier benchmarks.
-- **No intraday signals.** Pipeline runs once per day. Doesn't capture last-minute information shocks.
-- **Regime sensitivity.** Calibration is fitted on historical distributions. Structural breaks (e.g. court composition changes, new legislative coalitions) can degrade performance in ways that aren't immediately detectable.
-
----
-
-## Reproducibility
-
-**Requirements:** Python >= 3.10
+Python >= 3.10.
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/OliverKlug/Uncertainty-aware-political-prediction.git
+cd Uncertainty-aware-political-prediction
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 ```
 
-**Run the full daily pipeline:**
 ```bash
 python src/pipeline/run_daily.py
-```
-
-**Run backtesting only:**
-```bash
-python src/backtesting/run_backtest.py --category all --window expanding
-```
-
-**Generate calibration diagnostics:**
-```bash
-python src/evaluation/calibration_report.py --output results/
-```
-
-**Run tests:**
-```bash
+python src/backtesting/run_backtest.py --category election --synthetic
+python src/evaluation/calibration_report.py --output results/ --synthetic
 pytest tests/ -v
 ```
 
----
+`--synthetic` is required for backtest and calibration report. It uses an explicit RNG and labels the JSON `data: synthetic`. Do not treat those files as OOS market results.
 
-## Structure
+## Layout
 
 ```
-.
-├── src/
-│   ├── data/           # Ingestion, parsing, base rate library
-│   ├── models/         # Per-category classifiers + calibration
-│   ├── evaluation/     # Brier, ECE, ROC, calibration curves
-│   ├── backtesting/    # Expanding-window OOS engine
-│   └── pipeline/       # Daily orchestration
-├── docs/
-│   ├── model_cards/    # Feature sets and design decisions per category
-│   └── methodology.md  # Extended methodology
-├── results/            # OOS evaluation outputs
-├── tests/
-├── .env.example
-├── requirements.txt
-└── README.md
+src/data/           ingest stubs, parsers, base-rate library
+src/models/         per-category logistic + isotonic calibration
+src/evaluation/     Brier, ECE, ROC, calibration report
+src/backtesting/    expanding-window engine
+src/pipeline/       daily orchestration (prior-only scores)
+docs/               methodology notes + intended feature cards
+tests/
 ```
-*Not financial advice. Research system only.*
+
+Not financial advice. Research code only.

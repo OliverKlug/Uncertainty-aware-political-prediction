@@ -1,0 +1,13 @@
+.venv/
+.env
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+data/staging/
+results/audit_log.jsonl
+results/backtest_*.json
+results/calibration_report.json
+*.egg-info/
+dist/
+build/

@@ -7,7 +7,7 @@
   <!-- ── Primary meta ─────────────────────────────────────────────────── -->
   <title>Uncertainty-Aware Political Prediction</title>
   <meta name="description"
-        content="A probabilistic forecasting pipeline for discrete political and macroeconomic events. Produces calibrated probability estimates across 8 event categories, evaluated against market-implied baselines with a signed, append-only audit trail." />
+        content="Research scaffold: per-category logistic regression, isotonic calibration, expanding-window backtest. No live market evaluation." />
   <meta name="author" content="Oliver Klug" />
   <meta name="keywords"
         content="political forecasting, probabilistic prediction, calibration, isotonic regression, prediction markets, machine learning, Python" />
@@ -17,7 +17,7 @@
   <meta property="og:site_name"   content="Uncertainty-Aware Political Prediction" />
   <meta property="og:title"       content="Uncertainty-Aware Political Prediction" />
   <meta property="og:description"
-        content="Calibrated probability forecasts for political &amp; macroeconomic events. 8 specialised models, base-rate anchoring, isotonic regression calibration, and a SHA-256-signed audit trail — evaluated out-of-sample against market-implied benchmarks." />
+        content="Research scaffold for political and macro event probabilities. Per-category logistic models, isotonic calibration, expanding-window backtest. No live market evaluation." />
   <meta property="og:url"
         content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/" />
   <meta property="og:image"
@@ -32,7 +32,7 @@
   <meta name="twitter:card"        content="summary_large_image" />
   <meta name="twitter:title"       content="Uncertainty-Aware Political Prediction" />
   <meta name="twitter:description"
-        content="Calibrated probability forecasts for political &amp; macroeconomic events — 8 specialised models, base-rate anchoring, SHA-256-signed audit trail." />
+        content="Research scaffold: per-category logistic, isotonic calibration, expanding-window backtest." />
   <meta name="twitter:image"
         content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/social-preview.svg" />
   <meta name="twitter:image:alt"
@@ -287,9 +287,9 @@
     <div class="badge">Research System</div>
     <h1>Uncertainty-Aware<br /><span>Political Prediction</span></h1>
     <p class="subtitle">
-      A probabilistic forecasting pipeline for discrete political and macroeconomic
-      events. Calibrated probability estimates, market-implied benchmarks, and a
-      tamper-evident audit trail.
+      Research scaffold for discrete political and macro event probabilities.
+      Per-category logistic models, isotonic calibration, expanding-window
+      backtest. No live feeds and no market-implied evaluation yet.
     </p>
     <div class="cta-group">
       <a class="btn btn-primary"
@@ -303,20 +303,20 @@
   <!-- ── Stats ───────────────────────────────────────────────────────── -->
   <div class="stats">
     <div class="stat-card">
-      <div class="stat-value" style="color:#60a5fa">~53%</div>
-      <div class="stat-label">vs market baseline win rate (OOS)</div>
+      <div class="stat-value" style="color:#60a5fa">8</div>
+      <div class="stat-label">category feature schemas</div>
     </div>
     <div class="stat-card">
-      <div class="stat-value" style="color:#a78bfa">8</div>
-      <div class="stat-label">specialised event-category models</div>
+      <div class="stat-value" style="color:#a78bfa">2</div>
+      <div class="stat-label">toy JSON parsers (Congress, SCOTUS)</div>
     </div>
     <div class="stat-card">
       <div class="stat-value" style="color:#34d399">ISO</div>
-      <div class="stat-label">isotonic regression calibration + 95% CI</div>
+      <div class="stat-label">isotonic calibration + bootstrap CI</div>
     </div>
     <div class="stat-card">
       <div class="stat-value" style="color:#fb923c">SHA</div>
-      <div class="stat-label">256-signed append-only audit trail</div>
+      <div class="stat-label">256 checksum on JSONL rows, not a signature</div>
     </div>
   </div>
 
@@ -327,16 +327,16 @@
       <div class="feature-card">
         <div class="icon">🎯</div>
         <h3>Base-rate anchoring</h3>
-        <p>Every forecast starts from a historical prior computed independently
-           per category — before any live signal is introduced — preventing
-           baseline contamination.</p>
+        <p>If you supply a JSON base-rate file, the prior is the category
+           positive rate. Missing or thin categories use 0.5. No 1990–present
+           library ships in the repo.</p>
       </div>
       <div class="feature-card">
         <div class="icon">📐</div>
         <h3>Per-category models</h3>
-        <p>Supreme Court rulings and Senate cloture votes have structurally
-           different outcome distributions. Eight separate logistic-regression
-           classifiers respect that structure.</p>
+        <p>Eight separate logistic schemas so SCOTUS and cloture are not
+           pooled. Weights are not trained in-repo; the daily CLI scores the
+           prior only.</p>
       </div>
       <div class="feature-card">
         <div class="icon">📊</div>
@@ -347,10 +347,10 @@
       </div>
       <div class="feature-card">
         <div class="icon">🔐</div>
-        <h3>Signed audit trail</h3>
-        <p>Every prediction is SHA-256 signed at write time. Append-only; nothing
-           is editable after logging, making retrospective evaluation fully
-           trustworthy.</p>
+        <h3>Checksummed log</h3>
+        <p>Daily scores append to JSONL with a SHA-256 checksum of the row.
+           That is a tamper-evident hash, not a signature. Anyone can rewrite
+           the file and re-hash it.</p>
       </div>
     </div>
   </section>
@@ -387,16 +387,11 @@
 cd Uncertainty-aware-political-prediction
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 
-# Run full daily pipeline
 python src/pipeline/run_daily.py
-
-# Backtesting
-python src/backtesting/run_backtest.py --category all --window expanding
-
-# Calibration report
-python src/evaluation/calibration_report.py --output results/</code></pre>
+python src/backtesting/run_backtest.py --category election --synthetic
+python src/evaluation/calibration_report.py --output results/ --synthetic
+pytest tests/ -v</code></pre>
   </section>
 
   <!-- ── Footer ──────────────────────────────────────────────────────── -->

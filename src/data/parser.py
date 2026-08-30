@@ -87,9 +87,7 @@ def parse_scotus_docket(raw: dict[str, Any]) -> list[Event]:
                 category="supreme_court_ruling",
                 title=item.get("case_name", ""),
                 description=item.get("question_presented", ""),
-                scheduled_date=datetime.date.fromisoformat(
-                    item.get("argument_date", datetime.date.today().isoformat())
-                ),
+                scheduled_date=datetime.date.fromisoformat(item["argument_date"]),
                 features={
                     "oral_argument_sentiment": item.get(
                         "oral_argument_sentiment", 0.0

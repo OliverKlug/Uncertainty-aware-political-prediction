@@ -13,6 +13,8 @@ def test_fetch_source_returns_path(tmp_path):
     path = fetch_source(SOURCES[0], tmp_path)
     assert isinstance(path, Path)
     assert path.parent == tmp_path
+    assert path.exists()
+    assert path.read_text(encoding="utf-8")
 
 
 def test_ingest_all_returns_list(tmp_path):

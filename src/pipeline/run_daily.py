@@ -9,11 +9,16 @@ Usage
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import json
 import logging
-import datetime
+import sys
 from pathlib import Path
+
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +38,7 @@ def _sign_entry(entry: dict) -> str:
 
 
 def append_audit_entry(entry: dict) -> None:
-    """Append a signed, append-only entry to the audit log."""
+    """Append a checksummed JSONL entry. This is a hash, not a signature."""
     AUDIT_LOG.parent.mkdir(parents=True, exist_ok=True)
     entry["_sha256"] = _sign_entry({k: v for k, v in entry.items() if k != "_sha256"})
     with AUDIT_LOG.open("a") as fh:
@@ -92,10 +97,11 @@ def step_classify(staged_paths: list[Path]) -> list[dict]:
 
 def step_score(classified_events: list[dict]) -> list[dict]:
     """Step 3 – produce calibrated probability for each classified event."""
-    # TODO: load fitted classifiers + calibrators from model store and score
     scored: list[dict] = []
     for ev in classified_events:
-        ev["calibrated_prob"] = ev["prior"]  # placeholder: use prior only
+        # ponytail: no fitted models in-repo; prior is the only honest score.
+        # Upgrade: load CategoryClassifier + IsotonicCalibrator per category.
+        ev["calibrated_prob"] = ev["prior"]
         ev["ci_lower"] = max(0.0, ev["prior"] - 0.1)
         ev["ci_upper"] = min(1.0, ev["prior"] + 0.1)
         ev["model_version"] = "prior_only_v0"

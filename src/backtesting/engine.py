@@ -42,8 +42,11 @@ class BacktestResult:
         return float(np.mean([r.ece for r in self.fold_results]))
 
     @property
-    def mean_roc_auc(self) -> float:
-        return float(np.mean([r.roc_auc for r in self.fold_results]))
+    def mean_roc_auc(self) -> float | None:
+        vals = [r.roc_auc for r in self.fold_results if np.isfinite(r.roc_auc)]
+        if not vals:
+            return None
+        return float(np.mean(vals))
 
     @property
     def mean_log_loss(self) -> float:
@@ -106,7 +109,7 @@ class BacktestEngine:
         self,
         category: str,
         min_train_size: int = 30,
-        step: int = 1,
+        step: int = 10,
     ) -> None:
         self.category = category
         self.min_train_size = min_train_size
