@@ -3,408 +3,472 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <!-- ── Primary meta ─────────────────────────────────────────────────── -->
-  <title>Uncertainty-Aware Political Prediction</title>
-  <meta name="description"
-        content="Research scaffold: per-category logistic regression, isotonic calibration, expanding-window backtest. No live market evaluation." />
+  <title>Uncertainty-aware political prediction</title>
+  <meta name="description" content="Research scaffold: per-category logistic regression, isotonic calibration, expanding-window backtest. No live market evaluation." />
   <meta name="author" content="Oliver Klug" />
-  <meta name="keywords"
-        content="political forecasting, probabilistic prediction, calibration, isotonic regression, prediction markets, machine learning, Python" />
+  <link rel="canonical" href="https://oliverklug.github.io/Uncertainty-aware-political-prediction/" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 
-  <!-- ── Open Graph (LinkedIn, Facebook, Slack) ───────────────────────── -->
-  <meta property="og:type"        content="website" />
-  <meta property="og:site_name"   content="Uncertainty-Aware Political Prediction" />
-  <meta property="og:title"       content="Uncertainty-Aware Political Prediction" />
-  <meta property="og:description"
-        content="Research scaffold for political and macro event probabilities. Per-category logistic models, isotonic calibration, expanding-window backtest. No live market evaluation." />
-  <meta property="og:url"
-        content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/" />
-  <meta property="og:image"
-        content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/social-preview.svg" />
-  <meta property="og:image:type"  content="image/svg+xml" />
-  <meta property="og:image:width"  content="1200" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Uncertainty-aware political prediction" />
+  <meta property="og:title" content="Uncertainty-aware political prediction" />
+  <meta property="og:description" content="A research scaffold for political and macro event probabilities. No live market evaluation." />
+  <meta property="og:url" content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/" />
+  <meta property="og:image" content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/social-preview.svg" />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt"
-        content="Uncertainty-Aware Political Prediction — calibrated forecasts for 8 political event categories" />
-
-  <!-- ── Twitter / X Card ─────────────────────────────────────────────── -->
-  <meta name="twitter:card"        content="summary_large_image" />
-  <meta name="twitter:title"       content="Uncertainty-Aware Political Prediction" />
-  <meta name="twitter:description"
-        content="Research scaffold: per-category logistic, isotonic calibration, expanding-window backtest." />
-  <meta name="twitter:image"
-        content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/social-preview.svg" />
-  <meta name="twitter:image:alt"
-        content="Uncertainty-Aware Political Prediction social card" />
-
-  <!-- ── Canonical ────────────────────────────────────────────────────── -->
-  <link rel="canonical"
-        href="https://oliverklug.github.io/Uncertainty-aware-political-prediction/" />
+  <meta property="og:image:alt" content="Uncertainty-aware political prediction, research scaffold" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Uncertainty-aware political prediction" />
+  <meta name="twitter:description" content="Per-category logistic, isotonic calibration, expanding-window backtest." />
+  <meta name="twitter:image" content="https://oliverklug.github.io/Uncertainty-aware-political-prediction/social-preview.svg" />
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    @font-face {
+      font-family: "IBM Plex Sans";
+      src: url("https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-sans@5.2.5/latin-400-normal.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "IBM Plex Sans";
+      src: url("https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-sans@5.2.5/latin-500-normal.woff2") format("woff2");
+      font-weight: 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "IBM Plex Sans";
+      src: url("https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-sans@5.2.5/latin-600-normal.woff2") format("woff2");
+      font-weight: 600;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "IBM Plex Mono";
+      src: url("https://cdn.jsdelivr.net/fontsource/fonts/ibm-plex-mono@5.2.5/latin-400-normal.woff2") format("woff2");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
 
     :root {
-      --bg:        #0f172a;
-      --surface:   #1e293b;
-      --border:    #334155;
-      --text:      #f1f5f9;
-      --muted:     #94a3b8;
-      --accent:    #3b82f6;
-      --accent2:   #8b5cf6;
-      --green:     #34d399;
+      --paper: #f2f2f4;
+      --ink: #161616;
+      --muted: #5a5a5e;
+      --rule: #c8c8cc;
+      --accent: #a33b32;
+      --focus: #a33b32;
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
-      min-height: 100vh;
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Helvetica Neue", sans-serif;
+      font-size: 1.0625rem;
+      line-height: 1.55;
+      min-height: 100dvh;
     }
 
-    /* ── Nav ── */
-    nav {
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 2rem;
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      opacity: 0.045;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    .skip {
+      position: absolute;
+      left: 1rem;
+      top: -3rem;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0.4rem 0.7rem;
+      z-index: 50;
+    }
+    .skip:focus { top: 1rem; }
+
+    a { color: inherit; }
+    a:focus-visible, button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 3rem));
+      margin-inline: auto;
+    }
+
+    header {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       justify-content: space-between;
-      gap: 1rem;
+      gap: 1.5rem;
+      padding-block: 1.35rem;
+      border-bottom: 1px solid var(--rule);
     }
-    nav .logo {
-      font-weight: 700;
-      font-size: 1rem;
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      white-space: nowrap;
-    }
-    nav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.9rem;
-      transition: color .15s;
-    }
-    nav a:hover { color: var(--text); }
-    nav .nav-links { display: flex; gap: 1.5rem; }
-
-    /* ── Hero ── */
-    .hero {
-      max-width: 860px;
-      margin: 5rem auto 4rem;
-      padding: 0 2rem;
-    }
-    .badge {
-      display: inline-block;
-      background: #3b82f620;
-      color: #93c5fd;
-      font-size: 0.75rem;
+    .mark {
       font-weight: 600;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      padding: .35rem 1rem;
-      border-radius: 9999px;
-      border: 1px solid #3b82f630;
-      margin-bottom: 1.5rem;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+    }
+    nav {
+      display: flex;
+      gap: 1.4rem;
+      font-size: 0.92rem;
+    }
+    nav a { text-decoration: none; color: var(--muted); }
+    nav a:hover { color: var(--ink); }
+    nav a[aria-current="page"] {
+      color: var(--ink);
+      box-shadow: inset 0 -1px 0 var(--ink);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+      gap: 3.5rem;
+      align-items: end;
+      min-height: calc(100dvh - 5.2rem);
+      padding-block: 3.25rem 4.5rem;
+    }
+    .kicker {
+      margin: 0 0 1.1rem;
+      color: var(--accent);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
     }
     h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 800;
-      line-height: 1.15;
-      letter-spacing: -.02em;
-      margin-bottom: 1.25rem;
-    }
-    h1 span {
-      background: linear-gradient(90deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .subtitle {
-      font-size: 1.15rem;
-      color: var(--muted);
-      max-width: 640px;
-      margin-bottom: 2.5rem;
-    }
-    .cta-group { display: flex; gap: 1rem; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: .5rem;
-      padding: .75rem 1.5rem;
-      border-radius: 8px;
+      margin: 0 0 1.15rem;
+      font-size: clamp(2.4rem, 5.4vw, 4.35rem);
       font-weight: 600;
-      font-size: .95rem;
-      text-decoration: none;
-      transition: opacity .15s, transform .15s;
+      letter-spacing: -0.045em;
+      line-height: 1.02;
+      text-wrap: balance;
     }
-    .btn:hover { opacity: .88; transform: translateY(-1px); }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: #fff;
-    }
-    .btn-secondary {
-      background: var(--surface);
-      color: var(--text);
-      border: 1px solid var(--border);
-    }
-
-    /* ── Stats ── */
-    .stats {
-      max-width: 860px;
-      margin: 0 auto 5rem;
-      padding: 0 2rem;
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 2rem;
-      font-weight: 800;
-      margin-bottom: .25rem;
-    }
-    .stat-label {
-      font-size: .82rem;
+    .dek {
+      margin: 0 0 1.75rem;
+      max-width: 38ch;
       color: var(--muted);
-      line-height: 1.4;
+      font-size: 1.05rem;
     }
-
-    /* ── Features ── */
-    .section {
-      max-width: 860px;
-      margin: 0 auto 5rem;
-      padding: 0 2rem;
-    }
-    h2 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 1.5rem;
-      letter-spacing: -.02em;
-    }
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    .cta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
       gap: 1.25rem;
     }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
+    .cta-primary {
+      display: inline-block;
+      padding: 0.7rem 1.05rem;
+      background: var(--ink);
+      color: var(--paper);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
     }
-    .feature-card h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: .5rem;
+    .cta-primary:hover { background: #2a2a2a; }
+    .cta-primary:active { transform: translateY(1px); }
+    .cta-text {
+      color: var(--ink);
+      font-weight: 500;
+      text-underline-offset: 0.2em;
     }
-    .feature-card p {
-      font-size: .875rem;
-      color: var(--muted);
-      line-height: 1.55;
-    }
-    .icon { font-size: 1.5rem; margin-bottom: .75rem; }
-
-    /* ── Categories table ── */
-    .table-wrap { overflow-x: auto; }
-    table {
+    .hero figure { margin: 0; }
+    .hero img {
+      display: block;
       width: 100%;
-      border-collapse: collapse;
-      font-size: .9rem;
+      height: min(68dvh, 620px);
+      object-fit: cover;
+      object-position: 55% 40%;
     }
-    thead th {
-      text-align: left;
-      padding: .75rem 1rem;
+    .hero figcaption {
+      margin-top: 0.55rem;
       color: var(--muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem 2rem;
+      padding-block: 2.4rem 3.2rem;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--rule);
+    }
+    .metrics dt {
+      margin: 0;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 1.85rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+    }
+    .metrics dd {
+      margin: 0.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      max-width: 22ch;
+    }
+
+    section { padding-block: 4.25rem 2.5rem; }
+    h2 {
+      margin: 0 0 1.5rem;
+      font-size: clamp(1.6rem, 3vw, 2.15rem);
       font-weight: 600;
-      font-size: .75rem;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      border-bottom: 1px solid var(--border);
+      letter-spacing: -0.03em;
+      text-wrap: balance;
     }
-    tbody tr { border-bottom: 1px solid var(--border); }
-    tbody tr:last-child { border-bottom: none; }
-    tbody td {
-      padding: .8rem 1rem;
+    .prose {
+      max-width: 62ch;
       color: var(--muted);
-      vertical-align: top;
     }
-    tbody td:first-child { color: var(--text); font-weight: 500; }
+    .prose p { margin: 0 0 1rem; }
 
-    /* ── Code block ── */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem 4rem;
+    }
+    .col h3 {
+      margin: 0 0 0.85rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    .col ol {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: item;
+    }
+    .col li {
+      counter-increment: item;
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 0.6rem;
+      padding: 0.7rem 0;
+      border-top: 1px solid var(--rule);
+      color: var(--muted);
+    }
+    .col li::before {
+      content: counter(item, decimal-leading-zero);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      padding-top: 0.15rem;
+    }
+    .col li:last-child { border-bottom: 1px solid var(--rule); }
+
+    .band {
+      margin-block: 1rem 0;
+    }
+    .band img {
+      display: block;
+      width: 100%;
+      height: min(52vw, 420px);
+      object-fit: cover;
+      object-position: 50% 35%;
+    }
+    .band figcaption {
+      width: min(1120px, calc(100% - 3rem));
+      margin: 0.6rem auto 0;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.72rem;
+    }
+
+    .cats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 3.5rem;
+    }
+    .cats div {
+      display: grid;
+      grid-template-columns: 11rem 1fr;
+      gap: 1rem;
+      padding: 0.85rem 0;
+      border-top: 1px solid var(--rule);
+    }
+    .cats dt {
+      margin: 0;
+      font-weight: 500;
+    }
+    .cats dd {
+      margin: 0;
+      color: var(--muted);
+    }
+
     pre {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1.25rem 1.5rem;
+      margin: 0;
+      padding: 1.25rem 0;
+      border-top: 1px solid var(--ink);
+      border-bottom: 1px solid var(--ink);
       overflow-x: auto;
-      font-size: .85rem;
-      color: #e2e8f0;
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.82rem;
       line-height: 1.7;
-      margin-bottom: 1rem;
     }
-    code { font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; }
 
-    /* ── Footer ── */
     footer {
-      border-top: 1px solid var(--border);
-      padding: 2rem;
-      text-align: center;
-      font-size: .85rem;
+      padding-block: 2.5rem 3rem;
+      border-top: 1px solid var(--rule);
       color: var(--muted);
+      font-size: 0.88rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1.5rem;
+      flex-wrap: wrap;
     }
     footer a { color: var(--muted); }
-    footer a:hover { color: var(--text); }
+    footer a:hover { color: var(--ink); }
 
-    @media (max-width: 600px) {
-      nav .nav-links { display: none; }
+    @media (max-width: 768px) {
+      .wrap { width: calc(100% - 2rem); }
+      nav { gap: 0.9rem; font-size: 0.85rem; }
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        min-height: auto;
+        padding-block: 2rem 2.75rem;
+      }
+      .hero img { height: 52vw; min-height: 220px; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .split, .cats { grid-template-columns: 1fr; }
+      .cats div { grid-template-columns: 1fr; gap: 0.2rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .cta-primary:active { transform: none; }
     }
   </style>
 </head>
 <body>
+  <div class="grain" aria-hidden="true"></div>
+  <a class="skip" href="#main">Skip to content</a>
 
-  <!-- ── Navigation ──────────────────────────────────────────────────── -->
-  <nav>
-    <span class="logo">Political Prediction</span>
-    <div class="nav-links">
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Methodology</a>
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/tree/main/docs/model_cards">Model Cards</a>
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">GitHub</a>
-    </div>
-  </nav>
+  <div class="wrap">
+    <header>
+      <a class="mark" href="./">UAPP</a>
+      <nav aria-label="Primary">
+        <a href="./" aria-current="page">Overview</a>
+        <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Method</a>
+        <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">GitHub</a>
+      </nav>
+    </header>
 
-  <!-- ── Hero ────────────────────────────────────────────────────────── -->
-  <section class="hero">
-    <div class="badge">Research System</div>
-    <h1>Uncertainty-Aware<br /><span>Political Prediction</span></h1>
-    <p class="subtitle">
-      Research scaffold for discrete political and macro event probabilities.
-      Per-category logistic models, isotonic calibration, expanding-window
-      backtest. No live feeds and no market-implied evaluation yet.
-    </p>
-    <div class="cta-group">
-      <a class="btn btn-primary"
-         href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">
-        View on GitHub
-      </a>
-      <a class="btn btn-secondary" href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Read Methodology</a>
-    </div>
-  </section>
+    <main id="main">
+      <section class="hero">
+        <div>
+          <p class="kicker">Research scaffold</p>
+          <h1>Uncertainty-aware political prediction</h1>
+          <p class="dek">Per-category logistic, isotonic later-split, expanding-window backtest. No live market book.</p>
+          <div class="cta">
+            <a class="cta-primary" href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">GitHub</a>
+            <a class="cta-text" href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Read the method</a>
+          </div>
+        </div>
+        <figure>
+          <img src="hearing-empty.jpg" width="1800" height="1350" alt="Empty legislative hearing room, photographed from the aisle after hours" />
+          <figcaption>The object is discrete events. The room is empty until a vote lands.</figcaption>
+        </figure>
+      </section>
 
-  <!-- ── Stats ───────────────────────────────────────────────────────── -->
-  <div class="stats">
-    <div class="stat-card">
-      <div class="stat-value" style="color:#60a5fa">8</div>
-      <div class="stat-label">category feature schemas</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#a78bfa">2</div>
-      <div class="stat-label">toy JSON parsers (Congress, SCOTUS)</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#34d399">ISO</div>
-      <div class="stat-label">isotonic calibration + bootstrap CI</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" style="color:#fb923c">SHA</div>
-      <div class="stat-label">256 checksum on JSONL rows, not a signature</div>
-    </div>
+      <dl class="metrics">
+        <div>
+          <dt>8</dt>
+          <dd>category feature schemas, no fitted weights in-repo</dd>
+        </div>
+        <div>
+          <dt>2</dt>
+          <dd>toy JSON parsers, Congress and SCOTUS shapes</dd>
+        </div>
+        <div>
+          <dt>0.5</dt>
+          <dd>uninformative prior when the base-rate file is missing or thin</dd>
+        </div>
+        <div>
+          <dt>SHA</dt>
+          <dd>256 checksum on JSONL rows. A hash, not a signature</dd>
+        </div>
+      </dl>
+
+      <section>
+        <h2>What runs, and what does not</h2>
+        <div class="split">
+          <div class="col">
+            <h3>Implemented</h3>
+            <ol>
+              <li>L2 logistic per category, with a standard scaler</li>
+              <li>Isotonic calibration on the later half of each train window</li>
+              <li>Expanding-window backtest, no shuffle, train always before test</li>
+              <li>Brier, ECE with p=1 counted, ROC, log-loss</li>
+            </ol>
+          </div>
+          <div class="col">
+            <h3>Not in this repo</h3>
+            <ol>
+              <li>Live ingest. Staging files are empty JSON stubs</li>
+              <li>Six of eight parsers</li>
+              <li>An event store or market prices</li>
+              <li>Any out-of-sample beat rate vs a book</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <!-- ── Features ────────────────────────────────────────────────────── -->
-  <section class="section">
-    <h2>What makes it different</h2>
-    <div class="features">
-      <div class="feature-card">
-        <div class="icon">🎯</div>
-        <h3>Base-rate anchoring</h3>
-        <p>If you supply a JSON base-rate file, the prior is the category
-           positive rate. Missing or thin categories use 0.5. No 1990–present
-           library ships in the repo.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">📐</div>
-        <h3>Per-category models</h3>
-        <p>Eight separate logistic schemas so SCOTUS and cloture are not
-           pooled. Weights are not trained in-repo; the daily CLI scores the
-           prior only.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">📊</div>
-        <h3>Temporal calibration</h3>
-        <p>Isotonic regression is fitted on a chronologically ordered held-out
-           split. No look-ahead. Bootstrap CIs (1,000 resamples) quantify
-           calibration uncertainty.</p>
-      </div>
-      <div class="feature-card">
-        <div class="icon">🔐</div>
-        <h3>Checksummed log</h3>
-        <p>Daily scores append to JSONL with a SHA-256 checksum of the row.
-           That is a tamper-evident hash, not a signature. Anyone can rewrite
-           the file and re-hash it.</p>
-      </div>
-    </div>
-  </section>
+  <figure class="band">
+    <img src="hero-desk.jpg" width="1400" height="1050" alt="Printed records and folders on a steel desk in cool daylight" />
+    <figcaption>No feed is wired. The daily CLI writes empty stubs and scores the prior.</figcaption>
+  </figure>
 
-  <!-- ── Event categories ─────────────────────────────────────────────── -->
-  <section class="section">
-    <h2>Event categories</h2>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th>Examples</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>Supreme Court rulings</td><td>Merits decisions, cert grants</td></tr>
-          <tr><td>Federal legislation</td><td>Senate / House votes, cloture</td></tr>
-          <tr><td>Executive action</td><td>Executive orders, agency rules</td></tr>
-          <tr><td>Elections</td><td>Primary, general, special</td></tr>
-          <tr><td>Geopolitical</td><td>Treaty ratification, sanctions</td></tr>
-          <tr><td>Central bank</td><td>Rate decisions, forward guidance</td></tr>
-          <tr><td>Macro releases</td><td>CPI, NFP vs. consensus</td></tr>
-          <tr><td>Regulatory</td><td>FTC, SEC, NLRB enforcement outcomes</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+  <div class="wrap">
+    <section>
+      <h2>Category schemas</h2>
+      <dl class="cats">
+        <div><dt>Supreme Court</dt><dd>Merits, cert grants</dd></div>
+        <div><dt>Legislation</dt><dd>Floor votes, cloture</dd></div>
+        <div><dt>Executive</dt><dd>Orders, agency rules</dd></div>
+        <div><dt>Elections</dt><dd>Primary, general, special</dd></div>
+        <div><dt>Geopolitical</dt><dd>Treaties, sanctions</dd></div>
+        <div><dt>Central bank</dt><dd>Rates, guidance</dd></div>
+        <div><dt>Macro prints</dt><dd>CPI, NFP vs consensus</dd></div>
+        <div><dt>Regulatory</dt><dd>FTC, SEC, NLRB</dd></div>
+      </dl>
+    </section>
 
-  <!-- ── Quick-start ──────────────────────────────────────────────────── -->
-  <section class="section">
-    <h2>Quick start</h2>
-    <pre><code>git clone https://github.com/OliverKlug/Uncertainty-aware-political-prediction.git
+    <section>
+      <h2>Run it</h2>
+      <pre><code>git clone https://github.com/OliverKlug/Uncertainty-aware-political-prediction.git
 cd Uncertainty-aware-political-prediction
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
 python src/pipeline/run_daily.py
 python src/backtesting/run_backtest.py --category election --synthetic
-python src/evaluation/calibration_report.py --output results/ --synthetic
 pytest tests/ -v</code></pre>
-  </section>
+    </section>
 
-  <!-- ── Footer ──────────────────────────────────────────────────────── -->
-  <footer>
-    <p>
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">GitHub</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Methodology</a>
-      &nbsp;·&nbsp;
-      <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/tree/main/docs/model_cards">Model Cards</a>
-    </p>
-    <p style="margin-top:.75rem">Not financial advice. Research system only.</p>
-  </footer>
-
+    <footer>
+      <p>Not financial advice. Research code only.</p>
+      <p>
+        <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction">Source</a>
+        ·
+        <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/blob/main/docs/methodology.md">Methodology</a>
+        ·
+        <a href="https://github.com/OliverKlug/Uncertainty-aware-political-prediction/tree/main/docs/model_cards">Model cards</a>
+      </p>
+    </footer>
+  </div>
 </body>
 </html>
